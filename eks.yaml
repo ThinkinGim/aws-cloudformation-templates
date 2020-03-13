@@ -1,0 +1,42 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  VpcId:
+    Description: ID of an existing VPC
+    Type:  'AWS::EC2::VPC::Id'
+    ConstraintDescription: VPC ID doesn't exist
+  SubnetId:
+    Description: ID of an existing SubnetId
+    Type:  'List<AWS::EC2::Subnet::Id>'
+    ConstraintDescription: Subnet ID doesn't exist
+Resources:
+  EKSCluster:
+    Type: 'AWS::EKS::Cluster'
+    Properties:
+      Name: !Ref 'AWS::StackName'
+      Version: '1.15'
+      RoleArn: !GetAtt ClusterRole.Arn
+      ResourcesVpcConfig:
+        SecurityGroupIds:
+          - !Ref 'ClusterSecurityGroup'
+        SubnetIds: !Ref 'SubnetId'
+  ClusterSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable SSH access via custom port and specific source
+      VpcId: !Ref 'VpcId'
+  ClusterRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - eks.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+        - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
